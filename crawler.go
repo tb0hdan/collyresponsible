@@ -11,19 +11,19 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-func Crawl(ctx context.Context, webSite, userAgent string, options ...[]colly.CollectorOption) (err error) {
-	parsed, err := url.Parse(webSite)
+func Crawl(profile *CrawlerProfile) (err error) {
+	parsed, err := url.Parse(profile.Website)
 	if err != nil {
 		return err
 	}
 	// Get robots.txt
 	limiter := NewLimiter(2)
-	robots, err := GetRobots(ctx, webSite, userAgent, limiter)
+	robots, err := GetRobots(profile.Ctx, profile.Website, profile.UserAgent, limiter)
 	if err != nil {
 		return err
 	}
 	// Check if the user agent is allowed to visit the website
-	if !robots.TestAgent(webSite, userAgent) {
+	if !robots.TestAgent(profile.Website, profile.UserAgent) {
 		return fmt.Errorf("User agent is not allowed to visit the website")
 	}
 	// Sleep after getting robots.txt
@@ -32,19 +32,24 @@ func Crawl(ctx context.Context, webSite, userAgent string, options ...[]colly.Co
 	visitMap := NewVisitMap()
 
 	collectorOptions := []colly.CollectorOption{
+		// Does not work with Async
 		// colly.Async(),
-		colly.UserAgent(userAgent),
+		colly.UserAgent(profile.UserAgent),
 	}
 
-	if len(options) > 0 {
-		collectorOptions = append(collectorOptions, options[0]...)
+	if len(profile.CollyOptions) > 0 {
+		collectorOptions = append(collectorOptions, profile.CollyOptions...)
 	}
 
 	// Instantiate default collector
 	c := colly.NewCollector(collectorOptions...)
 
 	// Use empty limit rule for collector
-	c.Limit(&colly.LimitRule{})
+	if profile.CollyLimits == nil {
+		profile.CollyLimits = &colly.LimitRule{DomainGlob: "*"}
+	}
+	//
+	c.Limit(profile.CollyLimits)
 
 	// Pass down URL from request to response context
 	c.OnRequest(func(r *colly.Request) {
@@ -54,15 +59,17 @@ func Crawl(ctx context.Context, webSite, userAgent string, options ...[]colly.Co
 	// After making a request get "url" from
 	// the context of the request
 	c.OnResponse(func(r *colly.Response) {
-		fmt.Printf("URL: %s\nHeaders: %s\nBody length: %d\n", r.Ctx.Get("url"), r.Headers, len(r.Body))
+		for _, fn := range profile.ResponseHooks {
+			fn(r)
+		}
 	})
 
 	// On every a element which has href attribute call callback
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		link := e.Attr("href")
 		// this works
-		if strings.ToLower(e.Attr("rel")) == "nofollow" {
-			fmt.Println("nofollow: ", link)
+		if strings.ToLower(e.Attr("rel")) == NoFollow {
+			fmt.Printf("%s: %s\n", NoFollow, link)
 			return
 		}
 		absoluteLink := e.Request.AbsoluteURL(link)
@@ -80,7 +87,7 @@ func Crawl(ctx context.Context, webSite, userAgent string, options ...[]colly.Co
 
 		// Check if the user agent is allowed to visit the website
 		// absolute links don't work with robotester
-		if !robots.TestAgent(link, userAgent) {
+		if !robots.TestAgent(link, profile.UserAgent) {
 			fmt.Println("robots: ", link)
 			return
 		}
@@ -109,10 +116,10 @@ func Crawl(ctx context.Context, webSite, userAgent string, options ...[]colly.Co
 	})
 
 	// Start scraping
-	c.Visit(webSite)
+	c.Visit(profile.Website)
 
 	// Wait until threads are finished
-	runCtx, cancel := context.WithTimeout(context.Background(), 3600*time.Second)
+	runCtx, cancel := context.WithTimeout(context.Background(), time.Duration(profile.MaxRuntime)*time.Second)
 	defer cancel()
 	go func(c *colly.Collector) {
 		c.Wait()

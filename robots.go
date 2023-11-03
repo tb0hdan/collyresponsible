@@ -2,6 +2,7 @@ package collyresponsible
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -12,11 +13,11 @@ func GetRobots(ctx context.Context, website, userAgent string, limiter *RequestL
 	if strings.HasSuffix(website, "/") {
 		website = website[:len(website)-1]
 	}
-	head, err := http.NewRequestWithContext(ctx, http.MethodHead, website+"/robots.txt", nil)
+	head, err := http.NewRequestWithContext(ctx, http.MethodHead, fmt.Sprintf("%s/%s", website, RobotsTxt), nil)
 	if err != nil {
 		return nil, err
 	}
-	head.Header.Add("User-Agent", userAgent)
+	head.Header.Add(UserAgentHeader, userAgent)
 	//
 	resp, err := http.DefaultClient.Do(head)
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -25,11 +26,11 @@ func GetRobots(ctx context.Context, website, userAgent string, limiter *RequestL
 	//
 	limiter.Sleep()
 	//
-	get, err := http.NewRequestWithContext(ctx, http.MethodGet, website+"/robots.txt", nil)
+	get, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", website, RobotsTxt), nil)
 	if err != nil {
 		return nil, err
 	}
-	get.Header.Add("User-Agent", userAgent)
+	get.Header.Add(UserAgentHeader, userAgent)
 	//
 	getResp, err := http.DefaultClient.Do(get)
 	if err != nil || resp.StatusCode != http.StatusOK {
