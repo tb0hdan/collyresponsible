@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
-	collyresponsible "github.com/tb0hdan/colly-responsible"
+	"github.com/tb0hdan/collyresponsible"
 )
 
 func main() {

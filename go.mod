@@ -1,4 +1,4 @@
-module github.com/tb0hdan/colly-responsible
+module github.com/tb0hdan/collyresponsible
 
 go 1.21
 
