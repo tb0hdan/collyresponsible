@@ -2,6 +2,7 @@ package collyresponsible
 
 import (
 	"context"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 )
@@ -12,10 +13,11 @@ type CrawlerProfile struct {
 	UserAgent string
 	// Limits
 	MaxDepth   int
-	MaxRuntime int
+	MaxRuntime time.Duration
 	// Colly configuration
 	CollyOptions []colly.CollectorOption
 	CollyLimits  *colly.LimitRule
 	// Custom callbacks
 	ResponseHooks []func(response *colly.Response)
+	URLHooks      []func(url string)
 }

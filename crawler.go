@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/gocolly/colly/v2"
 )
@@ -80,23 +79,27 @@ func Crawl(profile *CrawlerProfile) (err error) {
 		if err != nil {
 			return
 		}
-
+		// Always skip already visited links
+		if visitMap.IsVisited(absoluteLink) {
+			return
+		}
+		// Pass URL to hooks before checking if the link is allowed
+		for _, fn := range profile.URLHooks {
+			if absoluteLink != "" {
+				fn(absoluteLink)
+			}
+		}
+		//
 		if currentHost.Host != parsed.Host {
 			return
 		}
-
 		// Check if the user agent is allowed to visit the website
-		// absolute links don't work with robotester
+		// absolute links don't work with robots.txt tester
 		if !robots.TestAgent(link, profile.UserAgent) {
 			fmt.Println("robots: ", link)
 			return
 		}
-
-		// Check if the link was already visited
-		if visitMap.IsVisited(absoluteLink) {
-			return
-		}
-
+		//
 		limiter.Sleep()
 		fmt.Println("Visiting", absoluteLink)
 		c.Visit(absoluteLink)
@@ -119,7 +122,7 @@ func Crawl(profile *CrawlerProfile) (err error) {
 	c.Visit(profile.Website)
 
 	// Wait until threads are finished
-	runCtx, cancel := context.WithTimeout(context.Background(), time.Duration(profile.MaxRuntime)*time.Second)
+	runCtx, cancel := context.WithTimeout(context.Background(), profile.MaxRuntime)
 	defer cancel()
 	go func(c *colly.Collector) {
 		c.Wait()
