@@ -20,8 +20,11 @@ func GetRobots(ctx context.Context, website, userAgent string, limiter *RequestL
 	head.Header.Add(UserAgentHeader, userAgent)
 	//
 	resp, err := http.DefaultClient.Do(head)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return robotstxt.FromString("# No robots.txt found")
 	}
 	//
 	limiter.Sleep()
@@ -33,9 +36,14 @@ func GetRobots(ctx context.Context, website, userAgent string, limiter *RequestL
 	get.Header.Add(UserAgentHeader, userAgent)
 	//
 	getResp, err := http.DefaultClient.Do(get)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		return nil, err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return robotstxt.FromString("# No robots.txt found")
+	}
+
 	robots, err := robotstxt.FromResponse(getResp)
 	if err != nil {
 		return nil, err
