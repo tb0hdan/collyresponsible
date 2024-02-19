@@ -8,7 +8,29 @@ import (
 	"strings"
 
 	"github.com/gocolly/colly/v2"
+	"github.com/temoto/robotstxt"
 )
+
+func TestRobotsGroup(robots *robotstxt.RobotsData, url, userAgent string) bool {
+	status := robots.TestAgent(url, userAgent)
+	if !status {
+		return false
+	}
+	// Test all user agents
+	parts := strings.Split(strings.TrimRight(userAgent, ")"), ";")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		// url support
+		newPart := strings.TrimPrefix(strings.TrimPrefix(part, "+https://"), "http://")
+		// version support
+		newPart = strings.TrimSpace(strings.Split(newPart, "/")[0])
+		if !robots.TestAgent(url, newPart) {
+			return false
+		}
+
+	}
+	return status
+}
 
 func Crawl(profile *CrawlerProfile) (err error) {
 	parsed, err := url.Parse(profile.Website)
@@ -22,9 +44,10 @@ func Crawl(profile *CrawlerProfile) (err error) {
 		return err
 	}
 	// Check if the user agent is allowed to visit the website
-	if !robots.TestAgent(profile.Website, profile.UserAgent) {
+	if !TestRobotsGroup(robots, profile.Website, profile.UserAgent) {
 		return fmt.Errorf("User agent is not allowed to visit the website")
 	}
+
 	// Sleep after getting robots.txt
 	limiter.Sleep()
 	//
