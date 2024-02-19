@@ -19,5 +19,6 @@ type CrawlerProfile struct {
 	CollyLimits  *colly.LimitRule
 	// Custom callbacks
 	ResponseHooks []func(response *colly.Response)
+	URLTests      []func(url string) bool
 	URLHooks      []func(url string)
 }

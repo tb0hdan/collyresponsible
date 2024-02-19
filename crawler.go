@@ -99,6 +99,12 @@ func Crawl(profile *CrawlerProfile) (err error) {
 			fmt.Println("robots: ", link)
 			return
 		}
+		// Check if the link is allowed
+		for _, fn := range profile.URLTests {
+			if !fn(absoluteLink) {
+				return
+			}
+		}
 		//
 		limiter.Sleep()
 		fmt.Println("Visiting", absoluteLink)
