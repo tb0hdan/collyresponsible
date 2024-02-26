@@ -57,6 +57,7 @@ func Crawl(profile *CrawlerProfile) (err error) {
 		// Does not work with Async
 		// colly.Async(),
 		colly.UserAgent(profile.UserAgent),
+		colly.CheckHead(),
 	}
 
 	if len(profile.CollyOptions) > 0 {
