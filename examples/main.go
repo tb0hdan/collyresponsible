@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/url"
 	"strings"
@@ -23,11 +24,16 @@ var bannedExtensions = []string{
 }
 
 func main() {
+	var (
+		crawlURL = flag.String("url", "https://en.wikipedia.org", "URL to crawl")
+	)
+	flag.Parse()
+	// Create a collector
 	httpCtx, cancel := context.WithTimeout(context.Background(), HTTPTimeout)
 	defer cancel()
 	profile := &collyresponsible.CrawlerProfile{
 		Ctx:        httpCtx,
-		Website:    "https://en.wikipedia.org",
+		Website:    *crawlURL,
 		UserAgent:  "Mozilla/5.0 (compatible; Colly Responsible; +https://github.com/tb0hdan/collyresponsible)",
 		MaxRuntime: MaxRunTime,
 		ResponseHooks: []func(r *colly.Response){
