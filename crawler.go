@@ -149,16 +149,15 @@ func Crawl(profile *CrawlerProfile) (err error) {
 	})
 
 	// Start scraping
-	c.Visit(profile.Website)
+	go func() {
+		// c.Wait() only makes sense with colly.Async(), so we just start goroutine
+		c.Visit(profile.Website)
+	}()
 
 	// Wait until threads are finished
 	runCtx, cancel := context.WithTimeout(context.Background(), profile.MaxRuntime)
 	defer cancel()
-	go func(c *colly.Collector) {
-		c.Wait()
-		// signal the context to cancel itself
-		cancel()
-	}(c)
+
 	<-runCtx.Done()
 
 	return nil
