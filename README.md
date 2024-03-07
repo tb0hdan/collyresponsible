@@ -11,3 +11,4 @@ Based on lessons learned while writing [Idun](https://github.com/tb0hdan/idun) a
 - robots.txt
 - actual delay between requests
 - URL tests (i.e. extension, domain, etc.)
+- Max run time
