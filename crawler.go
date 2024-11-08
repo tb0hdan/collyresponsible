@@ -107,6 +107,10 @@ func Crawl(profile *CrawlerProfile) (err error) {
 		if visitMap.IsVisited(absoluteLink) {
 			return
 		}
+		// Skip non HTTP links
+		if !(strings.HasPrefix(absoluteLink, "http://") || strings.HasPrefix(absoluteLink, "https://")) {
+			return
+		}
 		// Pass URL to hooks before checking if the link is allowed
 		for _, fn := range profile.URLHooks {
 			if absoluteLink != "" {
@@ -158,7 +162,6 @@ func Crawl(profile *CrawlerProfile) (err error) {
 		c.Visit(profile.Website)
 		cancel()
 	}()
-
 
 	<-runCtx.Done()
 
